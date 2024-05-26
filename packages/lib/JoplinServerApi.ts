@@ -29,7 +29,7 @@ enum ExecOptionsTarget {
 	File = 'file',
 }
 
-interface ExecOptions {
+export interface ExecOptions {
 	responseFormat?: ExecOptionsResponseFormat;
 	target?: ExecOptionsTarget;
 	path?: string;
@@ -311,4 +311,7 @@ export default class JoplinServerApi {
 		}
 	}
 
+	public async loadSession() {
+		await this.session();
+	}
 }

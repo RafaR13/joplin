@@ -64,15 +64,19 @@ export default abstract class BaseModel<T> {
 
 	private defaultFields_: string[] = [];
 	private db_: DbConnection;
+	private dbSlave_: DbConnection;
 	private transactionHandler_: TransactionHandler;
 	private modelFactory_: NewModelFactoryHandler;
 	private config_: Config;
 	private savePoints_: SavePoint[] = [];
+	public usersWithReplication_: string[] = [];
 
-	public constructor(db: DbConnection, modelFactory: NewModelFactoryHandler, config: Config) {
+	public constructor(db: DbConnection, dbSlave: DbConnection, modelFactory: NewModelFactoryHandler, config: Config) {
 		this.db_ = db;
+		this.dbSlave_ = dbSlave;
 		this.modelFactory_ = modelFactory;
 		this.config_ = config;
+		this.usersWithReplication_ = config.USERS_WITH_REPLICATION ? config.USERS_WITH_REPLICATION.split(',') : [];
 
 		this.transactionHandler_ = new TransactionHandler(db);
 	}
@@ -110,6 +114,26 @@ export default abstract class BaseModel<T> {
 
 	public get db(): DbConnection {
 		if (this.transactionHandler_.activeTransaction) return this.transactionHandler_.activeTransaction;
+		return this.db_;
+	}
+
+	public isUserWithReplication(userId: Uuid) {
+		if (!userId) return false;
+
+		for (const id of this.usersWithReplication_) {
+			if (id === userId) return true;
+			if (id.length < 22 && userId.startsWith(id)) return true;
+		}
+
+		return false;
+	}
+
+	public dbSlave(userId: Uuid = ''): DbConnection {
+		if (this.isUserWithReplication(userId)) {
+			logger.info(`Using slave database for user: ${userId}`);
+			return this.dbSlave_;
+		}
+
 		return this.db_;
 	}
 
@@ -390,13 +414,13 @@ export default abstract class BaseModel<T> {
 	}
 
 	public async load(id: Uuid | number, options: LoadOptions = {}): Promise<T> {
-		if (!id) throw new Error('id cannot be empty');
+		if (!id) throw new ErrorBadRequest('id cannot be empty');
 
 		return this.db(this.tableName).select(options.fields || this.defaultFields).where({ id: id }).first();
 	}
 
 	public async delete(id: string | string[] | number | number[], options: DeleteOptions = {}): Promise<void> {
-		if (!id) throw new Error('id cannot be empty');
+		if (!id) throw new ErrorBadRequest('id cannot be empty');
 
 		const ids = (typeof id === 'string' || typeof id === 'number') ? [id] : id;
 

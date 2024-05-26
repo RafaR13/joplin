@@ -36,15 +36,13 @@ interface Props {
 	noteTitle: string;
 	noteIsTodo: number;
 	isProvisional: boolean;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
-	titleInputRef: any;
+	titleInputRef: React.RefObject<HTMLInputElement>;
 	onTitleChange(event: ChangeEvent<HTMLInputElement>): void;
 	disabled: boolean;
 }
 
 function styles_(props: Props) {
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Old code before rule was applied
-	return buildStyle(['NoteEditorTitleBar'], props.themeId, (theme: any) => {
+	return buildStyle(['NoteEditorTitleBar'], props.themeId, theme => {
 		return {
 			titleInput: {
 				flex: 1,
